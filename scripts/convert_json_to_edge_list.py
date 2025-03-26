@@ -3,91 +3,106 @@ import argparse
 import json
 import networkx as nx
 import matplotlib.pyplot as plt
+import pandas as pd
 
-def main(input_file, output1_file, output2_file, output3_file):
-    # Cargar el JSON usando 'utf-8-sig' para manejar el BOM
+# Diccionario de países, continentes y colores
+continent_dict = {
+    "africa": ["egypt", "morocco", "south africa"],
+    "asia": ["china", "india", "indonesia", "iran", "israel", "japan", "jordan", "kazakhstan", "kuwait", "macao", "malaysia", "pakistan", "palestine", "saudi arabia", "singapore", "south korea", "sri lanka", "taiwan", "thailand", "turkey", "united arab emirates", "viet nam"],
+    "europe": ["austria", "belgium", "bulgaria", "croatia", "cyprus", "czech republic", "denmark", "estonia", "finland", "france", "germany", "greece", "hungary", "ireland", "italy", "netherlands", "norway", "poland", "portugal", "romania", "russian federation", "serbia", "slovakia", "slovenia", "spain", "sweden", "switzerland", "ukraine", "united kingdom"],
+    "north america": ["canada", "mexico", "united states"],
+    "south america": ["argentina", "brazil", "chile", "colombia", "ecuador", "peru", "venezuela"],
+    "oceania": ["australia", "new zealand"]
+}
+
+continent_colors = {
+    "Africa": "#FF5733",
+    "Asia": "#33FF57",
+    "Europe": "#3357FF",
+    "North America": "#FF33A1",
+    "South America": "#A133FF",
+    "Oceania": "#33FFF5",
+    "Unknown": "#808080"
+}
+
+# Función para obtener el continente y color
+def get_continent_and_color(country):
+    for continent, countries in continent_dict.items():
+        if country.lower() in countries:
+            continent_title = continent.title()
+            return continent_title, continent_colors.get(continent_title, "#808080")
+    return "Unknown", "#808080"
+
+# Procesar archivo de países
+def process_countries(input_file, output_file):
+    data = []
+    with open(input_file, "r", encoding="utf-8") as file:
+        for line in file:
+            parts = line.strip().split(" ", 1)
+            if len(parts) == 2:
+                code, country = parts
+                continent, color = get_continent_and_color(country)
+                data.append(f"{code} {country} {continent} {color}")
+    
+    with open(output_file, "w", encoding="utf-8") as file:
+        file.write("\n".join(data))
+    
+    print(f"Archivo generado: {output_file}")
+
+# Procesar archivo JSON y generar grafos
+def process_network(input_file, output1_file, output2_file, output3_file):
     with open(input_file, "r", encoding="utf-8-sig") as f:
         data = json.load(f)
     
-    # Extraer la sección de red
     network = data.get("network", {})
     nodes = network.get("items", [])
     edges = network.get("edges", network.get("links", []))
     
-    # Crear el grafo (usa nx.DiGraph() si los enlaces son dirigidos)
     G = nx.Graph()
-    
-    # Agregar los nodos al grafo, usando el 'id' y guardando la etiqueta
     for node in nodes:
         G.add_node(node["id"], label=node.get("label", str(node["id"])))
     
-    # Agregar los enlaces utilizando las claves "source_id", "target_id" y "strength" como peso
     for edge in edges:
         if "source_id" in edge and "target_id" in edge:
-            source_id = edge["source_id"]
-            target_id = edge["target_id"]
-            weight = edge.get("strength", 1)  # Valor por defecto 1 si no se encuentra 'strength'
-            G.add_edge(source_id, target_id, weight=weight)
-        else:
-            print("No se encontró 'source_id' ni 'target_id' en el enlace:", edge)
+            G.add_edge(edge["source_id"], edge["target_id"], weight=edge.get("strength", 1))
     
-    # Guardar la edge list en el archivo de salida especificado (-o1)
     with open(output1_file, "w", encoding="utf-8") as f:
         f.write("# node1 node2 weight\n")
-        for source, target, data_edge in G.edges(data=True):
-            weight = data_edge.get("weight", 1)
-            f.write(f"{source} {target}\n")  # {weight}\n")
+        for source, target in G.edges():
+            f.write(f"{source} {target}\n")
     
-    print(f"Edge list guardada en: {output1_file}")
-    
-    # Guardar la lista de nodos en el archivo de salida especificado (-o2)
     with open(output2_file, "w", encoding="utf-8") as f:
         f.write("# node label\n")
-        for node, data_node in G.nodes(data=True):
-            label = data_node.get("label", str(node))
-            f.write(f"{node} {label}\n")
+        for node, data in G.nodes(data=True):
+            f.write(f"{node} {data.get('label', str(node))}\n")
     
-    print(f"Lista de nodos guardada en: {output2_file}")
-    
-    # Guardar la edge list usando etiquetas en lugar de IDs (-o3)
-    # Asegurando que los nombres multi-palabra aparezcan juntos
     with open(output3_file, "w", encoding="utf-8") as f:
-        f.write("# node1_label node2_label weight\n")
-        for source, target, data_edge in G.edges(data=True):
-            source_label = G.nodes[source].get("label", str(source))
-            target_label = G.nodes[target].get("label", str(target))
-            
-            # Reemplazar espacios con guiones bajos para mantener las etiquetas juntas
-            source_label_formatted = source_label.replace(" ", "_")
-            target_label_formatted = target_label.replace(" ", "_")
-            
-            weight = data_edge.get("weight", 1)
-            f.write(f"{source_label_formatted} {target_label_formatted}\n")  # {weight}\n")
+        f.write("# node1_label node2_label\n")
+        for source, target in G.edges():
+            f.write(f"{G.nodes[source]['label'].replace(' ', '_')} {G.nodes[target]['label'].replace(' ', '_')}\n")
     
-    print(f"Edge list con etiquetas guardada en: {output3_file}")
-    
-    # Dibujar el grafo utilizando una disposición de fuerza de resorte
+    print(f"Archivos de red generados: {output1_file}, {output2_file}, {output3_file}")
+
     pos = nx.spring_layout(G)
-    labels = nx.get_node_attributes(G, "label")
     plt.figure(figsize=(12, 12))
-    nx.draw_networkx_nodes(G, pos, node_size=500, node_color="skyblue")
-    nx.draw_networkx_edges(G, pos, width=1.0, alpha=0.7)
-    nx.draw_networkx_labels(G, pos, labels, font_size=10)
+    nx.draw(G, pos, with_labels=True, node_size=500, node_color="skyblue", edge_color="gray")
     plt.title("Grafo generado a partir del JSON de VOSviewer")
     plt.axis("off")
     plt.show()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Convierte un archivo JSON de VOSviewer a edge list y node list, y dibuja el grafo"
-    )
-    parser.add_argument("-i", "--input", required=True,
-                        help="Ruta del archivo JSON de entrada")
-    parser.add_argument("-o1", "--output1", required=True,
-                        help="Nombre del archivo de salida para la edge list (node1 node2 weight)")
-    parser.add_argument("-o2", "--output2", required=True,
-                        help="Nombre del archivo de salida para la lista de nodos (node label)")
-    parser.add_argument("-o3", "--output3", required=True,
-                        help="Nombre del archivo de salida para la edge list usando etiquetas (node1_label node2_label weight)")
+    parser = argparse.ArgumentParser(description="Procesa archivos JSON de VOSviewer y datos de países.")
+    parser.add_argument("-i", "--input", help="Archivo JSON de entrada")
+    parser.add_argument("-o1", "--output1", help="Archivo edge list (node1 node2)")
+    parser.add_argument("-o2", "--output2", help="Archivo lista de nodos (node label)")
+    parser.add_argument("-o3", "--output3", help="Archivo edge list con etiquetas (node1_label node2_label)")
+    #parser.add_argument("-c", "--countries", help="Archivo de países de entrada")
+    parser.add_argument("-oc", "--output_countries", help="Archivo de países de salida con continentes y colores")
+    
     args = parser.parse_args()
-    main(args.input, args.output1, args.output2, args.output3)
+    
+    if args.input and args.output1 and args.output2 and args.output3:
+        process_network(args.input, args.output1, args.output2, args.output3)
+    
+    if args.countries and args.o2:
+        process_countries(args.o2, args.output_countries)
