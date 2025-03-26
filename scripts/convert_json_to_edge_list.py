@@ -104,5 +104,7 @@ if __name__ == "__main__":
     if args.input and args.output1 and args.output2 and args.output3:
         process_network(args.input, args.output1, args.output2, args.output3)
     
-    if args.countries and args.o2:
+    if args.output2 and args.output_countries:
+        process_countries(args.output2, args.output_countries)
+
         process_countries(args.o2, args.output_countries)
