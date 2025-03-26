@@ -199,6 +199,16 @@ def plot_hyperbolic_disk(nb_seg=100):
               color="#333333", linewidth=0.5, linestyle="None", marker="o",
               markersize=3, markeredgecolor="None", markeredgewidth=None,
               markerfacecolor="b", alpha=1.0)
+      # Añadir nombres a los nodos
+  for i in range(len(names)):
+      ax.annotate(names[i], 
+                (theta[i], radius[i]),
+                fontsize=8,
+                ha='center',
+                va='center',
+                xytext=(0, 5),
+                textcoords='offset points')
+  
   # Removes labels.
   ax.set_rticks([])
   ax.set_xticklabels("")
@@ -422,14 +432,16 @@ def plot_comparison_vstat_using_cols(cols_ori, cols_inf, pos="lower right"):
   ax = fig.add_subplot(nb_rows, nb_columns, id_fig)
   # Loads and plots the original degree distribution.
   data = np.loadtxt(vstat_inferred, usecols=cols_inf)
+  print('Data_INF',data)
   ax.plot(data[:, 0], data[:, 1], c="#222222", marker="None", ls="-", lw=1, ms=1, markerfacecolor="r", label=r"inferred")
   ax.fill_between(data[:, 0], data[:, 1]-(2 * data[:, 2]), data[:, 1]+(2 * data[:, 2]), color="#CCCCCC")
   # ax.plot(data[:, 0], data[:, 1]-(2 * data[:, 2]), c="k")
   # ax.plot(data[:, 0], data[:, 1]+(2 * data[:, 2]), c="k")
   # Loads and plots the original degree distribution.
   data = np.loadtxt(vstat_original, usecols=cols_ori)
-  ax.plot(data[:, 0], data[:, 1], c="b", marker="s", ls="-", lw=1, markerfacecolor="b", label=r"original")
+  ax.plot(data[:, 0], data[:, 1], c="b", marker="s", ls="-", lw=1, markerfacecolor="r", label=r"original")
   # Legend.
+  print('Data',data)
   lines1, labels1 = ax.get_legend_handles_labels()
   ax.legend(lines1, labels1,
             shadow=False, fancybox=False, prop={"size": 20},
@@ -454,9 +466,11 @@ def plot_comparison_vprop():
   ax.set_xlabel(r"original sum degree of neighbors")
   ax.set_ylabel(r"inferred sum degree of neighbors")
   # Average degree of neighbors.
+  print('Aqui error')
   ax = plot_comparison_vprop_using_cols([7, 8, 9])
   ax.set_xlabel(r"original average degree of neighbors $(k_\mathrm{nn})$")
   ax.set_ylabel(r"inferred average degree of neighbors $(k_\mathrm{nn})$")
+  print('Fin error')
   # Sum of triangles to which each vertex participates.
   ax = plot_comparison_vprop_using_cols([10, 11, 12])
   ax.set_xlabel(r"original number of triangles")
@@ -467,6 +481,7 @@ def plot_comparison_vprop():
   ax.set_ylabel(r"inferred clustering $(c)$")
   # Degree distribution.
   ax = plot_comparison_vstat_using_cols([0, 1], [0, 1, 2], "upper right")
+  print(plot_comparison_vprop_using_cols([0, 1, 2]))
   ax.set_xscale("log")
   ax.set_yscale("log")
   ax.set_xlabel(r"degree $(k)$")
@@ -474,23 +489,25 @@ def plot_comparison_vprop():
   # ax.set_ylabel(r"degree distribution $[p(k)]$"))
   ax.set_ylabel(r"degree distribution")
   # Sum degree of neighbors spectrum.
-  ax = plot_comparison_vstat_using_cols([0, 2], [0, 3, 4], "lower right")
+  ax = plot_comparison_vstat_using_cols([0, 3], [0, 3, 4], "lower right")
   ax.set_xlabel(r"degree")
   # ax.set_xlabel(r"degree $(k)$"))
   ax.set_ylabel(r"sum degree of neighbors")
   # Average degree of neighbors spectrum.
-  ax = plot_comparison_vstat_using_cols([0, 3], [0, 5, 6], "lower right")
+  print('In error') #fijarse en el error index
+  ax = plot_comparison_vstat_using_cols([0, 4], [0, 7, 8], "upper right")
   ax.set_xlabel(r"degree")
   # ax.set_xlabel(r"degree $(k)$"))
   # ax.set_ylabel(r"average degree of neighbors $[\bar{k}_\mathrm{nn}(k)]$"))
   ax.set_ylabel(r"average degree of neighbors")
+  print('Out error')
   # Number of triangles.
-  ax = plot_comparison_vstat_using_cols([0, 4], [0, 7, 8], "lower right")
+  ax = plot_comparison_vstat_using_cols([0, 5], [0, 9, 10], "lower right")
   # ax.set_xlabel(r"degree $(k)$"))
   ax.set_xlabel(r"degree")
   ax.set_ylabel(r"number of triangles")
   # Clustering spectrum.
-  ax = plot_comparison_vstat_using_cols([0, 5], [0, 9, 10], "upper right")
+  ax = plot_comparison_vstat_using_cols([0, 6], [0, 11, 12], "upper right")
   # ax.set_xlabel(r"degree $(k)$")
   ax.set_xlabel(r"degree")
   # ax.set_ylabel(r"clustering coefficient $[\bar{c}(k)]$"))
@@ -525,6 +542,7 @@ if __name__ == "__main__":
   pconn_inferred = name2 + ".inf_pconn"         # inferred probability of connection
   theta_inferred = name2 + ".inf_theta_density" # inferred angular density
   fname_outvalid = name2 + "_validation.pdf"    # figure's filename
+  dictionary_txt = 
   figure_title   = ('%r'%os.path.basename(name2)).replace('_', '\_').strip("'")
 
   # Sets the figure objects.
